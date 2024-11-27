@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "48323504620",
+    "project_id": "game-catch-coin",
+    "storage_bucket": "game-catch-coin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:48323504620:android:5f1ce3e14d5f8e500ab8c9",
+        "android_client_info": {
+          "package_name": "com.example.catch_coin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBKu-8gt-bsQHAHdFvcV--0ieDDVEdGsOo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
