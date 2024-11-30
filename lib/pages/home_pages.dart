@@ -1,91 +1,109 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart'; // Import GoRouter
 import 'package:uts_game_catch_coin/bloc/auth/auth_bloc.dart';
 
-// ignore: must_be_immutable
 class Home extends StatelessWidget {
   Home({super.key});
 
-  FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseAuth auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is AuthSignedOutState) {
-          // Navigate to login screen after sign out
-          Navigator.pushReplacementNamed(context, '/login');
-        }
-
-        if (state is AuthErrorState) {
-          // Show error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage)),
-          );
-        }
-      },
-      child: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator()); // Show loading indicator
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-                child: Text('Something went wrong: ${snapshot.error}'));
-          }
-
-          final user = snapshot.data;
-
-          return Scaffold(
-            appBar: AppBar(
-              backgroundColor: const Color(0xFFFFF176),
-              automaticallyImplyLeading: false,
-              shadowColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              toolbarHeight: 80,
-              systemOverlayStyle: SystemUiOverlayStyle.light,
-              centerTitle: true,
-              title: user != null
-                  ? _buildUserTitle(user) // Display username if logged in
-                  : const Text(
-                      'Hello, Guest',
-                      style: TextStyle(color: Colors.black),
-                    ), // Display Guest if not logged in
-              leading: IconButton(
-                icon: const Icon(Icons.logout, color: Colors.black),
-                onPressed: () {
-                  // Trigger logout using AuthBloc
-                  context.read<AuthBloc>().add(AuthSignOutEvent());
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFF176),
+        automaticallyImplyLeading: false,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        toolbarHeight: 80,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        centerTitle: true,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Fetch name from Firestore
+            FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(auth.currentUser?.uid)
+                  .get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return const Text('Error loading name');
+                } else if (!snapshot.hasData || snapshot.data == null) {
+                  return const Text('Hello');
+                } else {
+                  var userData = snapshot.data?.data() as Map<String, dynamic>;
+                  String name = userData['name'] ?? 'User';
+                  return Text(
+                    'Hello, $name',
+                    style: GoogleFonts.poppins(
+                      textStyle: const TextStyle(
+                        color: Color.fromARGB(255, 27, 0, 0),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+            GestureDetector(
+              child: FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(auth.currentUser?.uid)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircleAvatar(
+                      backgroundColor: Colors.grey,
+                      radius: 30,
+                    );
+                  } else if (snapshot.hasError || !snapshot.hasData) {
+                    return const CircleAvatar(
+                      backgroundColor: Colors.blue,
+                      radius: 30,
+                    );
+                  } else {
+                    var userData =
+                        snapshot.data?.data() as Map<String, dynamic>;
+                    String? photoUrl = userData['photoUrl'];
+                    return CircleAvatar(
+                      backgroundImage: photoUrl != null
+                          ? NetworkImage(photoUrl)
+                          : const AssetImage('assets/images/dino.png')
+                              as ImageProvider,
+                      radius: 20,
+                    );
+                  }
                 },
               ),
             ),
-            body: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildHome(context),
-                    const SizedBox(height: 20),
-
-                    if (user != null)
-                      _logoutButton(context), // Optional: logout button in body
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
+          ],
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildHome(context),
+            const SizedBox(height: 20),
+            _logoutButton(context), // Optional: logout button in body
+          ],
+        ),
       ),
     );
   }
 
+  // Home content widget
   Widget _buildHome(BuildContext context) {
     return Column(
       children: [
@@ -94,40 +112,12 @@ class Home extends StatelessWidget {
           width: 150,
           height: 150,
         ),
+        // Add additional content here if necessary
       ],
     );
   }
 
-  // Build user title in AppBar
-  Widget _buildUserTitle(User user) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Hello, ',
-          style: GoogleFonts.raleway(
-            textStyle: const TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.normal,
-              fontSize: 20,
-            ),
-          ),
-        ),
-        Text(
-          user.email!,
-          style: GoogleFonts.raleway(
-            textStyle: const TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Optional: logout button in body
+  // Logout button widget
   Widget _logoutButton(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
@@ -139,8 +129,8 @@ class Home extends StatelessWidget {
         elevation: 0,
       ),
       onPressed: () {
-        // Trigger logout using AuthBloc
-        context.read<AuthBloc>().add(AuthSignOutEvent());
+        FirebaseAuth.instance.signOut();
+        context.go('/login');
       },
       child: const Text(
         'Sign Out',

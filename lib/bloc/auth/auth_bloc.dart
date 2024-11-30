@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:meta/meta.dart';
 
@@ -6,76 +7,56 @@ part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  AuthBloc() : super(AuthStateInitial()) {
+    // Initialize FirebaseAuth and Firestore
+    FirebaseAuth auth = FirebaseAuth.instance;
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    CollectionReference users = firestore.collection('users');
 
-  AuthBloc() : super(AuthInitial()) {
-    // Handling the Signup event
-    on<AuthSignUpEvent>((event, emit) async {
-      emit(AuthLoadingState()); // Tampilkan loading saat signup
-
+    // Listen for login event
+    on<AuthEventLogin>((event, emit) async {
       try {
-        await _firebaseAuth.createUserWithEmailAndPassword(
-            email: event.email, password: event.password);
-        emit(AuthSuccessState(successMessage: 'Akun berhasil dibuat!'));
-      } on FirebaseAuthException catch (e) {
-        emit(AuthErrorState(errorMessage: _handleError(e)));
-      } catch (e) {
-        emit(AuthErrorState(errorMessage: 'Terjadi kesalahan, coba lagi.'));
-      }
-    });
+        emit(AuthStateLoading()); // Show loading indicator
 
-    // Handling the SignIn event
-    on<AuthSignInEvent>((event, emit) async {
-      emit(AuthLoadingState()); // Tampilkan loading saat login
+        // Perform Firebase Authentication sign-in
+        UserCredential userCredential = await auth.signInWithEmailAndPassword(
+          email: event.email,
+          password: event.password,
+        );
 
-      try {
-        final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
-            email: event.email, password: event.password);
+        // Check if the user exists in Firestore
+        DocumentSnapshot userDoc = await users.doc(userCredential.user!.uid).get();
 
-        if (userCredential.user != null) {
-          emit(AuthSignedInState()); // Login berhasil, emit success state
+        // If user doesn't exist, create a new user document
+        if (!userDoc.exists) {
+          await users.doc(userCredential.user!.uid).set({
+            'email': userCredential.user!.email,
+            'uid': userCredential.user!.uid,
+            'name': userCredential.user!.displayName,
+            'photoUrl': userCredential.user!.photoURL,
+            'createAt': Timestamp.now(),
+            'lastLoginAt': Timestamp.now(),
+          });
         } else {
-          emit(AuthErrorState(errorMessage: 'Pengguna tidak ditemukan.'));
+          // Update the last login timestamp if the user exists
+          await users.doc(userCredential.user!.uid).set({
+            'lastLoginAt': Timestamp.now(),
+          }, SetOptions(merge: true));
         }
+
+        emit(AuthStateLoaded()); // Successfully logged in
       } on FirebaseAuthException catch (e) {
-        emit(AuthErrorState(errorMessage: _handleError(e))); // Tangani error
+        // Handle different Firebase Auth exceptions
+        if (e.code == 'user-not-found') {
+          emit(AuthStateError(message: 'No user found with that email.'));
+        } else if (e.code == 'wrong-password') {
+          emit(AuthStateError(message: 'Incorrect password.'));
+        } else {
+          emit(AuthStateError(message: 'Login failed: ${e.message}'));
+        }
       } catch (e) {
-        emit(AuthErrorState(errorMessage: 'Terjadi kesalahan, coba lagi.'));
+        emit(AuthStateError(message: 'An unknown error occurred: $e'));
       }
     });
-
-    // Handling the SignOut event
-    on<AuthSignOutEvent>((event, emit) async {
-      emit(AuthLoadingState()); // Tampilkan loading saat logout
-
-      try {
-        await _firebaseAuth.signOut();
-        emit(AuthSignedOutState()); // Emit signed out state setelah logout
-      } catch (e) {
-        emit(AuthErrorState(errorMessage: 'Gagal keluar. Coba lagi.'));
-      }
-    });
-  }
-
-  // Function to handle Firebase errors with Indonesian messages
-  String _handleError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'weak-password':
-        return 'Password terlalu lemah. Pilih password yang lebih kuat.';
-      case 'email-already-in-use':
-        return 'Email sudah terdaftar. Gunakan email lain.';
-      case 'invalid-email':
-        return 'Alamat email tidak valid. Periksa kembali email yang Anda masukkan.';
-      case 'user-not-found':
-        return 'Pengguna tidak ditemukan dengan email ini.';
-      case 'wrong-password':
-        return 'Password salah. Coba lagi.';
-      case 'too-many-requests':
-        return 'Terlalu banyak percobaan masuk. Coba lagi setelah beberapa saat.';
-      case 'network-request-failed':
-        return 'Koneksi jaringan gagal. Periksa koneksi internet Anda.';
-      default:
-        return 'Terjadi kesalahan. Silakan coba lagi.';
-    }
   }
 }

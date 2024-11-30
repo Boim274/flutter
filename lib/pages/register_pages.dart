@@ -2,17 +2,20 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // For Bloc
-import 'package:uts_game_catch_coin/bloc/auth/auth_bloc.dart';
+import 'package:uts_game_catch_coin/bloc/register/register_bloc.dart';
 import 'package:uts_game_catch_coin/pages/login_page.dart';
 import 'package:uts_game_catch_coin/visibility_cubit.dart'; // Import the VisibilityCubit
 
 class Signup extends StatelessWidget {
   Signup({super.key});
 
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+
+  final String _role = 'user';
 
   @override
   Widget build(BuildContext context) {
@@ -63,17 +66,40 @@ class Signup extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
+              _nameField(),
+              const SizedBox(height: 10),
               _emailField(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               _passwordField(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               _confirmPasswordField(),
-              const SizedBox(height: 40),
-              _signupButton(context),
               const SizedBox(height: 20),
+              _signupButton(context),
+              const SizedBox(height: 10),
               _signin(context),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _nameField() {
+    return TextField(
+      controller: _nameController,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: const Color(0xFFFFF9C4), // Light yellow
+        hintText: 'Name',
+        hintStyle: GoogleFonts.poppins(
+          textStyle: const TextStyle(
+            color: Colors.black54,
+            fontSize: 16,
+          ),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
       ),
     );
@@ -179,13 +205,13 @@ class Signup extends StatelessWidget {
 
   // Signup button
   Widget _signupButton(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<RegisterBloc, RegisterState>(
       listener: (context, state) {
-        if (state is AuthErrorState) {
+        if (state is RegisterFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage)),
+            SnackBar(content: Text(state.message)),
           );
-        } else if (state is AuthSuccessState) {
+        } else if (state is RegisterSuccess) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => Login()),
@@ -203,28 +229,37 @@ class Signup extends StatelessWidget {
           elevation: 5,
         ),
         onPressed: () {
-          if (_passwordController.text != _confirmPasswordController.text) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Passwords do not match')),
-            );
-          } else {
-            context.read<AuthBloc>().add(
-                  AuthSignUpEvent(
+          if (context.read<RegisterBloc>().state is! RegisterLoading) {
+            context.read<RegisterBloc>().add(
+                  RegisterSubmitted(
+                    name: _nameController.text,
                     email: _emailController.text,
                     password: _passwordController.text,
+                    confirmPassword: _confirmPasswordController.text,
+                    role: _role,
                   ),
                 );
           }
         },
-        child: Text(
-          'Sign Up',
-          style: GoogleFonts.poppins(
-            textStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.normal,
-            ),
-          ),
+        child: BlocBuilder<RegisterBloc, RegisterState>(
+          builder: (context, state) {
+            if (state is RegisterLoading) {
+              return const CircularProgressIndicator(
+                color: Colors.white,
+              );
+            } else {
+              return Text(
+                'Sign Up',
+                style: GoogleFonts.poppins(
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              );
+            }
+          },
         ),
       ),
     );

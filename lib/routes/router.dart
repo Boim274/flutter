@@ -23,7 +23,7 @@ final GoRouter router = GoRouter(
       },
     ),
     GoRoute(
-      path: '/',
+      path: '/homepages',
       name: 'home',
       builder: (context, state) {
         return Home();
