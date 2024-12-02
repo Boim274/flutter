@@ -3,8 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart'; // Import GoRouter
-import 'package:uts_game_catch_coin/bloc/auth/auth_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 class Home extends StatelessWidget {
   Home({super.key});
@@ -14,127 +13,244 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF176),
-        automaticallyImplyLeading: false,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        toolbarHeight: 80,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        centerTitle: true,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Fetch name from Firestore
-            FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(auth.currentUser?.uid)
-                  .get(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return const Text('Error loading name');
-                } else if (!snapshot.hasData || snapshot.data == null) {
-                  return const Text('Hello');
-                } else {
-                  var userData = snapshot.data?.data() as Map<String, dynamic>;
-                  String name = userData['name'] ?? 'User';
-                  return Text(
-                    'Hello, $name',
-                    style: GoogleFonts.poppins(
-                      textStyle: const TextStyle(
-                        color: Color.fromARGB(255, 27, 0, 0),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
-            GestureDetector(
-              child: FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(auth.currentUser?.uid)
-                    .get(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const CircleAvatar(
-                      backgroundColor: Colors.grey,
-                      radius: 30,
-                    );
-                  } else if (snapshot.hasError || !snapshot.hasData) {
-                    return const CircleAvatar(
-                      backgroundColor: Colors.blue,
-                      radius: 30,
-                    );
-                  } else {
-                    var userData =
-                        snapshot.data?.data() as Map<String, dynamic>;
-                    String? photoUrl = userData['photoUrl'];
-                    return CircleAvatar(
-                      backgroundImage: photoUrl != null
-                          ? NetworkImage(photoUrl)
-                          : const AssetImage('assets/images/dino.png')
-                              as ImageProvider,
-                      radius: 20,
-                    );
-                  }
-                },
-              ),
-            ),
-          ],
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/background.png'),
+            fit: BoxFit.cover,
+          ),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            _buildHome(context),
-            const SizedBox(height: 20),
-            _logoutButton(context), // Optional: logout button in body
+            // Lapisan semi-transparan
+            Container(
+              color: Colors.black
+                  .withOpacity(0.5), // Transparansi untuk efek gelap
+            ),
+            Column(
+              children: [
+                AppBar(
+                  backgroundColor: Colors.transparent,
+                  automaticallyImplyLeading: false,
+                  shadowColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                  toolbarHeight: 80,
+                  systemOverlayStyle: SystemUiOverlayStyle.light,
+                  centerTitle: true,
+                  title: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (auth.currentUser == null)
+                          const Text(
+                            'Hello, Welcome user',
+                            style: TextStyle(
+                              color: Color.fromARGB(
+                                  255, 255, 255, 255), // Warna teks putih
+                              fontSize: 18,
+                            ),
+                          )
+                        else
+                          FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(auth.currentUser?.uid)
+                                .get(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const CircularProgressIndicator();
+                              } else if (snapshot.hasError ||
+                                  !snapshot.hasData) {
+                                return const Text('Error loading name');
+                              } else {
+                                var userData = snapshot.data?.data()
+                                    as Map<String, dynamic>;
+                                String name = userData['name'] ?? 'User';
+                                return Text(
+                                  'Hello, $name',
+                                  style: const TextStyle(
+                                    color: Color.fromARGB(
+                                        255, 255, 255, 255), // Warna teks putih
+                                    fontSize: 18,
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        _profileMenu(context),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        _buildyourcoin(),
+                        const SizedBox(height: 20),
+                        _buildLeaderboard(),
+                        const SizedBox(height: 30),
+                        _buildHome(context),
+                        const SizedBox(height: 20),
+                        _playButton(context),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  // Home content widget
-  Widget _buildHome(BuildContext context) {
-    return Column(
+  Widget _buildLeaderboard() {
+    return Row(
       children: [
-        Image.asset(
-          'assets/images/dinoCoin.png',
-          width: 150,
-          height: 150,
+        Text(
+          'Leaderboard',
+          style: GoogleFonts.poppins(
+            textStyle: const TextStyle(
+              color: Colors.white, // Warna teks putih
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
         ),
-        // Add additional content here if necessary
       ],
     );
   }
 
-  // Logout button widget
-  Widget _logoutButton(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xff0D6EFD),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+  Widget _buildyourcoin() {
+    return Row(
+      children: [
+        Text(
+          'Your Coin: ',
+          style: GoogleFonts.poppins(
+            textStyle: const TextStyle(
+              color: Colors.white, // Warna teks putih
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
         ),
-        minimumSize: const Size(double.infinity, 60),
-        elevation: 0,
+        const Icon(
+          Icons.monetization_on,
+          color: Colors.white, // Warna ikon putih
+          size: 30,
+        )
+      ],
+    );
+  }
+
+  Widget _profileMenu(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.login,
+        color: Colors.white, // Warna ikon putih
+        size: 30,
       ),
-      onPressed: () {
-        FirebaseAuth.instance.signOut();
-        context.go('/login');
+      onSelected: (value) {
+        if (value == 'login') {
+          context.goNamed('login');
+        } else if (value == 'logout') {
+          FirebaseAuth.instance.signOut();
+          context.goNamed('login');
+        }
       },
-      child: const Text(
-        'Sign Out',
-        style: TextStyle(color: Colors.white),
+      itemBuilder: (context) {
+        if (auth.currentUser == null) {
+          return [
+            PopupMenuItem(
+              value: 'login',
+              child: Row(
+                children: const [
+                  Icon(Icons.login, color: Colors.black),
+                  SizedBox(width: 8),
+                  Text('Login'),
+                ],
+              ),
+            ),
+          ];
+        } else {
+          return [
+            PopupMenuItem(
+              value: 'logout',
+              child: Row(
+                children: const [
+                  Icon(Icons.logout, color: Colors.black),
+                  SizedBox(width: 8),
+                  Text('Logout'),
+                ],
+              ),
+            ),
+          ];
+        }
+      },
+      color: Colors.white,
+      elevation: 10,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      offset: const Offset(0, 50),
+      padding: const EdgeInsets.all(8),
+    );
+  }
+
+  Widget _buildHome(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/images/dinoCoin.png',
+            width: 200,
+            height: 200,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _playButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: ElevatedButton(
+        onPressed: () {
+          context.go('/game');
+        },
+        style: ButtonStyle(
+          backgroundColor: MaterialStateProperty.all(
+            const Color(0xFFFF0000),
+          ),
+          padding: MaterialStateProperty.all(
+            const EdgeInsets.symmetric(vertical: 25, horizontal: 70),
+          ),
+          shape: MaterialStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
+          shadowColor: MaterialStateProperty.all(Colors.black.withOpacity(0.3)),
+          elevation: MaterialStateProperty.all(6),
+        ),
+        child: const Text(
+          'Play',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

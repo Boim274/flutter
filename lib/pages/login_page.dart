@@ -24,7 +24,8 @@ class Login extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            Navigator.pop(context); // Navigate back
+            // Navigate to the home page
+            GoRouter.of(context).go('/');
           },
         ),
         title: Text(

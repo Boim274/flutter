@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uts_game_catch_coin/bloc/auth/auth_bloc.dart';
 import 'package:uts_game_catch_coin/bloc/register/register_bloc.dart';
 import 'package:uts_game_catch_coin/firebase_options.dart';
+import 'package:uts_game_catch_coin/pages/game_cachtcoint.dart';
 import 'package:uts_game_catch_coin/visibility_cubit.dart';
 import 'package:uts_game_catch_coin/routes/router.dart'; // Ensure router.dart is properly imported
 

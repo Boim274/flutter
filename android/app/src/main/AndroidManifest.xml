@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.uts_game_catch_coin">  <!-- Sesuaikan dengan Firebase -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" >  <!-- Sesuaikan dengan Firebase -->
 
     <application
         android:label="uts_game_catch_coin"  
