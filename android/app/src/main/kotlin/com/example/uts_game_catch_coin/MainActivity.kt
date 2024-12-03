@@ -1,4 +1,4 @@
-package com.example.uts_game_catch_coin
+package com.example.catch_coin
 
 import io.flutter.embedding.android.FlutterActivity
 

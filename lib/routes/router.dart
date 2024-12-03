@@ -1,78 +1,61 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flame/game.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uts_game_catch_coin/pages/GameOverScreen.dart';
 import 'package:uts_game_catch_coin/pages/game_cachtcoint.dart';
-
 import 'package:uts_game_catch_coin/pages/home_pages.dart';
 import 'package:uts_game_catch_coin/pages/login_page.dart';
 import 'package:uts_game_catch_coin/pages/register_pages.dart';
 import 'package:uts_game_catch_coin/splash_screen.dart';
 
 final GoRouter router = GoRouter(
-  // Set the initial location to '/splash'
-  initialLocation: '/splash',
-
+  initialLocation: '/splash', // Set lokasi awal ke splash screen
   redirect: (context, state) {
-    FirebaseAuth auth = FirebaseAuth.instance;
-    final currentUser = auth.currentUser;
+    final currentUser = FirebaseAuth.instance.currentUser;
     final isLoggedIn = currentUser != null;
 
-    // If the user is not logged in and the current route is not splash, redirect to login
-    if (!isLoggedIn) {
-      return state.namedLocation('splash') == '/splash' ? null : '/login';
+    // Debugging untuk memastikan lokasi URI
+    if (kDebugMode) {
+      print('Navigating to: ${state.uri}, User logged in: $isLoggedIn');
     }
 
-    // If the user is logged in, prevent them from going back to login or splash
-    return state.namedLocation('login') == '/login' ||
-            state.namedLocation('splash') == '/splash'
-        ? '/'
-        : null;
+    // Gunakan state.uri.toString() untuk mendapatkan lokasi
+    if (state.uri.toString() == '/splash') {
+      return isLoggedIn ? '/' : '/login';
+    }
+    if (!isLoggedIn && state.uri.toString() != '/login') {
+      return '/login';
+    }
+    if (isLoggedIn && state.uri.toString() == '/login') {
+      return '/';
+    }
+
+    // Tidak ada pengalihan
+    return null;
   },
+
   routes: [
-    // Login route
     GoRoute(
       path: '/login',
       name: 'login',
-      builder: (context, state) {
-        return Login();
-      },
+      builder: (context, state) => Login(),
     ),
-
-    // Home route
-    GoRoute(
-      path: '/',
-      name: 'home',
-      builder: (context, state) {
-        return Home();
-      },
-    ),
-
-    // Register route
     GoRoute(
       path: '/register',
       name: 'register',
-      builder: (context, state) {
-        return Signup();
-      },
+      builder: (context, state) => Signup(),
     ),
-
-    // Splash screen route
     GoRoute(
       path: '/splash',
       name: 'splash',
-      builder: (context, state) {
-        return const SplashScreen();
-      },
+      builder: (context, state) => const SplashScreen(),
     ),
     GoRoute(
-      path: '/gameover',
-      name: 'gameover',
-      builder: (context, state) {
-        return const GameOverScreen();
-      },
+      path: '/',
+      name: 'home',
+      builder: (context, state) => Home(),
     ),
-    // Game route
     GoRoute(
       path: '/game',
       name: 'game',
@@ -80,12 +63,19 @@ final GoRouter router = GoRouter(
         return GameWidget(
           game: DinoRunGame(
             onGameOver: () {
-              context.go(
-                  '/gameover'); // Navigate to game over screen when game ends
+              Future.microtask(() {
+                // ignore: use_build_context_synchronously
+                context.go('/gameover'); // Menggunakan context dari builder
+              });
             },
           ),
         );
       },
+    ),
+    GoRoute(
+      path: '/gameover',
+      name: 'gameover',
+      builder: (context, state) => const GameOverScreen(),
     ),
   ],
 );

@@ -229,19 +229,19 @@ class Home extends StatelessWidget {
           context.go('/game');
         },
         style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.all(
+          backgroundColor: WidgetStateProperty.all(
             const Color(0xFFFF0000),
           ),
-          padding: MaterialStateProperty.all(
+          padding: WidgetStateProperty.all(
             const EdgeInsets.symmetric(vertical: 25, horizontal: 70),
           ),
-          shape: MaterialStateProperty.all(
+          shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(100),
             ),
           ),
-          shadowColor: MaterialStateProperty.all(Colors.black.withOpacity(0.3)),
-          elevation: MaterialStateProperty.all(6),
+          shadowColor: WidgetStateProperty.all(Colors.black.withOpacity(0.3)),
+          elevation: WidgetStateProperty.all(6),
         ),
         child: const Text(
           'Play',
