@@ -3,7 +3,7 @@ import 'package:flame/components.dart';
 class Dino extends SpriteComponent with HasGameRef {
   late Vector2 velocity;
 
-  Dino() : super(size: Vector2(50, 50));
+  Dino() : super(size: Vector2(80, 80));
 
   @override
   Future<void> onLoad() async {
@@ -19,15 +19,15 @@ class Dino extends SpriteComponent with HasGameRef {
     position += velocity * dt;
 
     // Cegah Dino keluar dari tanah
-    if (position.y >= gameRef.size.y - size.y - 20) {
-      position.y = gameRef.size.y - size.y - 20;
+    if (position.y >= gameRef.size.y - size.y - 120) {
+      position.y = gameRef.size.y - size.y - 120;
       velocity.y = 0;
     }
   }
 
   void jump() {
-    if (position.y >= gameRef.size.y - size.y - 20) {
-      velocity.y = -450; // Lompatan
+    if (position.y >= gameRef.size.y - size.y - 120) {
+      velocity.y = -600; // Lompatan
     }
   }
 }

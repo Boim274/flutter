@@ -10,11 +10,24 @@ class Cactus extends SpriteComponent with HasGameRef {
     'snowy_rock4.png',
   ];
 
-  // Randomize the size between a set range (optional)
-  static const double minCactusHeight = 30.0;
-  static const double maxCactusHeight = 50.0;
-  static const double minCactusWidth = 30.0;
-  static const double maxCactusWidth = 50.0;
+  // Menentukan tinggi dan lebar minimum dan maksimum untuk kaktus
+  static const double minCactusHeight = 40.0;
+  static const double maxCactusHeight =
+      80.0; // Lebih besar agar variasi lebih nyata
+  static const double minCactusWidth = 25.0;
+  static const double maxCactusWidth =
+      60.0; // Lebih besar agar terlihat lebih variatif
+
+// Fungsi untuk menghasilkan ukuran acak kaktus
+  double getRandomHeight() {
+    return minCactusHeight +
+        (maxCactusHeight - minCactusHeight) * (Random().nextDouble());
+  }
+
+  double getRandomWidth() {
+    return minCactusWidth +
+        (maxCactusWidth - minCactusWidth) * (Random().nextDouble());
+  }
 
   Cactus() : super(size: Vector2.zero()); // Size will be set in onLoad
 
@@ -32,7 +45,7 @@ class Cactus extends SpriteComponent with HasGameRef {
     );
 
     // Position the cactus at the right side of the screen (off-screen)
-    position = Vector2(gameRef.size.x, gameRef.size.y - size.y - 20);
+    position = Vector2(gameRef.size.x, gameRef.size.y - size.y - 120);
 
     // Optionally, add random vertical offset (randomize its height)
     // position.y -= _random.nextDouble() * 100; // Randomize cactus height slightly (optional)
@@ -41,7 +54,7 @@ class Cactus extends SpriteComponent with HasGameRef {
   @override
   void update(double dt) {
     super.update(dt);
-    position.x -= 200 * dt; // Move to the left
+    position.x -= 250 * dt; // Move to the left
 
     if (position.x < -size.x) {
       removeFromParent(); // Remove cactus if it moves off-screen

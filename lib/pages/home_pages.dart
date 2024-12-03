@@ -5,10 +5,39 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
-class Home extends StatelessWidget {
-  Home({super.key});
+class Home extends StatefulWidget {
+  const Home({super.key});
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _HomeState createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  int score = 0;
+  int coinCount = 0;
 
   final FirebaseAuth auth = FirebaseAuth.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _retrieveQueryParams();
+    });
+  }
+
+  // Method to retrieve query parameters after the frame is built
+  void _retrieveQueryParams() {
+    final Map<String, String> queryParams =
+        GoRouterState.of(context).uri.queryParameters;
+    if (queryParams.isNotEmpty) {
+      setState(() {
+        score = int.tryParse(queryParams['score'] ?? '0') ?? 0;
+        coinCount = int.tryParse(queryParams['coins'] ?? '0') ?? 0;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +45,7 @@ class Home extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/images/background.png'),
+            image: AssetImage('assets/images/bag1.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -24,87 +53,97 @@ class Home extends StatelessWidget {
           children: [
             // Lapisan semi-transparan
             Container(
-              color: Colors.black
-                  .withOpacity(0.5), // Transparansi untuk efek gelap
+              color: Colors.black.withOpacity(0.5),
             ),
-            Column(
-              children: [
-                AppBar(
-                  backgroundColor: Colors.transparent,
-                  automaticallyImplyLeading: false,
-                  shadowColor: Colors.transparent,
-                  surfaceTintColor: Colors.transparent,
-                  toolbarHeight: 80,
-                  systemOverlayStyle: SystemUiOverlayStyle.light,
-                  centerTitle: true,
-                  title: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(20),
-                      bottomRight: Radius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (auth.currentUser == null)
-                          const Text(
-                            'Hello, Welcome user',
-                            style: TextStyle(
-                              color: Color.fromARGB(
-                                  255, 255, 255, 255), // Warna teks putih
-                              fontSize: 18,
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  AppBar(
+                    backgroundColor: Colors.transparent,
+                    automaticallyImplyLeading: false,
+                    shadowColor: Colors.transparent,
+                    surfaceTintColor: Colors.transparent,
+                    toolbarHeight: 80,
+                    systemOverlayStyle: SystemUiOverlayStyle.light,
+                    centerTitle: true,
+                    title: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (auth.currentUser == null)
+                            const Text(
+                              'Hello, Welcome user',
+                              style: TextStyle(
+                                color: Color.fromARGB(255, 255, 255, 255),
+                                fontSize: 18,
+                              ),
+                            )
+                          else
+                            FutureBuilder<DocumentSnapshot>(
+                              future: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(auth.currentUser?.uid)
+                                  .get(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const CircularProgressIndicator();
+                                } else if (snapshot.hasError ||
+                                    !snapshot.hasData) {
+                                  return const Text('Error loading name');
+                                } else {
+                                  var userData = snapshot.data?.data()
+                                      as Map<String, dynamic>;
+                                  String name = userData['name'] ?? 'User';
+                                  return Text(
+                                    'Hello, $name',
+                                    style: const TextStyle(
+                                      color: Color.fromARGB(255, 255, 255, 255),
+                                      fontSize: 18,
+                                    ),
+                                  );
+                                }
+                              },
                             ),
-                          )
-                        else
-                          FutureBuilder<DocumentSnapshot>(
-                            future: FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(auth.currentUser?.uid)
-                                .get(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const CircularProgressIndicator();
-                              } else if (snapshot.hasError ||
-                                  !snapshot.hasData) {
-                                return const Text('Error loading name');
-                              } else {
-                                var userData = snapshot.data?.data()
-                                    as Map<String, dynamic>;
-                                String name = userData['name'] ?? 'User';
-                                return Text(
-                                  'Hello, $name',
-                                  style: const TextStyle(
-                                    color: Color.fromARGB(
-                                        255, 255, 255, 255), // Warna teks putih
-                                    fontSize: 18,
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        _profileMenu(context),
-                      ],
+                          _profileMenu(context),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
+                  Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         _buildyourcoin(),
                         const SizedBox(height: 20),
-                        _buildLeaderboard(),
-                        const SizedBox(height: 30),
+                        _buildScore(),
+                        const SizedBox(height: 10),
                         _buildHome(context),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
                         _playButton(context),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Text(
+                      'by Ibrahim',
+                      style: GoogleFonts.poppins(
+                        textStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -112,14 +151,14 @@ class Home extends StatelessWidget {
     );
   }
 
-  Widget _buildLeaderboard() {
+  Widget _buildScore() {
     return Row(
       children: [
         Text(
-          'Leaderboard',
+          'Score: $score',
           style: GoogleFonts.poppins(
             textStyle: const TextStyle(
-              color: Colors.white, // Warna teks putih
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -133,10 +172,10 @@ class Home extends StatelessWidget {
     return Row(
       children: [
         Text(
-          'Your Coin: ',
+          'Your Coin: $coinCount',
           style: GoogleFonts.poppins(
             textStyle: const TextStyle(
-              color: Colors.white, // Warna teks putih
+              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -144,7 +183,7 @@ class Home extends StatelessWidget {
         ),
         const Icon(
           Icons.monetization_on,
-          color: Colors.white, // Warna ikon putih
+          color: Colors.white,
           size: 30,
         )
       ],
@@ -155,14 +194,15 @@ class Home extends StatelessWidget {
     return PopupMenuButton<String>(
       icon: const Icon(
         Icons.login,
-        color: Colors.white, // Warna ikon putih
+        color: Colors.white,
         size: 30,
       ),
-      onSelected: (value) {
+      onSelected: (value) async {
         if (value == 'login') {
           context.goNamed('login');
         } else if (value == 'logout') {
-          FirebaseAuth.instance.signOut();
+          await FirebaseAuth.instance.signOut();
+          // ignore: use_build_context_synchronously
           context.goNamed('login');
         }
       },
@@ -212,7 +252,7 @@ class Home extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Image.asset(
-            'assets/images/dinoCoin.png',
+            'assets/images/dinocoinwhite.png',
             width: 200,
             height: 200,
           ),
@@ -223,7 +263,7 @@ class Home extends StatelessWidget {
 
   Widget _playButton(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 10),
       child: ElevatedButton(
         onPressed: () {
           context.go('/game');

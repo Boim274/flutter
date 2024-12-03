@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flame/game.dart';
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uts_game_catch_coin/pages/GameOverScreen.dart';
 import 'package:uts_game_catch_coin/pages/game_cachtcoint.dart';
@@ -10,72 +9,96 @@ import 'package:uts_game_catch_coin/pages/register_pages.dart';
 import 'package:uts_game_catch_coin/splash_screen.dart';
 
 final GoRouter router = GoRouter(
-  initialLocation: '/splash', // Set lokasi awal ke splash screen
-  redirect: (context, state) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final isLoggedIn = currentUser != null;
+  initialLocation: '/splash', // Set '/splash' as the initial location
+  redirect: (context, state) async {
+    final auth = FirebaseAuth.instance;
 
-    // Debugging untuk memastikan lokasi URI
-    if (kDebugMode) {
-      print('Navigating to: ${state.uri}, User logged in: $isLoggedIn');
-    }
-
-    // Gunakan state.uri.toString() untuk mendapatkan lokasi
-    if (state.uri.toString() == '/splash') {
-      return isLoggedIn ? '/' : '/login';
-    }
-    if (!isLoggedIn && state.uri.toString() != '/login') {
-      return '/login';
-    }
-    if (isLoggedIn && state.uri.toString() == '/login') {
-      return '/';
+    // Allow splash screen to display without redirect
+    if (state.fullPath == '/splash') {
+      return null; // Do not redirect from the splash screen
     }
 
-    // Tidak ada pengalihan
+    // Allow register page to be accessible without login
+    if (state.fullPath == '/register') {
+      return null; // Do not redirect from the register page
+    }
+
+    // Redirect to login if not authenticated and not on public pages
+    if (auth.currentUser == null &&
+        state.fullPath != '/login' &&
+        state.fullPath != '/register') {
+      return '/login'; // Redirect to login if not authenticated
+    }
+
     return null;
   },
-
   routes: [
+    // Login route
     GoRoute(
       path: '/login',
       name: 'login',
-      builder: (context, state) => Login(),
+      builder: (context, state) {
+        return Login();
+      },
     ),
-    GoRoute(
-      path: '/register',
-      name: 'register',
-      builder: (context, state) => Signup(),
-    ),
-    GoRoute(
-      path: '/splash',
-      name: 'splash',
-      builder: (context, state) => const SplashScreen(),
-    ),
+
+    // Home route
     GoRoute(
       path: '/',
       name: 'home',
-      builder: (context, state) => Home(),
+      builder: (context, state) {
+        return Home();
+      },
     ),
+
+    // Register route
+    GoRoute(
+      path: '/register',
+      name: 'register',
+      builder: (context, state) {
+        return Signup();
+      },
+    ),
+
+    // Splash screen route
+    GoRoute(
+      path: '/splash',
+      name: 'splash',
+      builder: (context, state) {
+        return const SplashScreen();
+      },
+    ),
+
+    // Game Over route (handles score and coins)
+    GoRoute(
+      path: '/gameover',
+      name: 'gameover',
+      builder: (context, state) {
+        final score =
+            int.tryParse(state.uri.queryParameters['score'] ?? '0') ?? 0;
+        final coins =
+            int.tryParse(state.uri.queryParameters['coins'] ?? '0') ?? 0;
+        return GameOverScreen(
+          score: score,
+          coins: coins,
+        );
+      },
+    ),
+
+    // Game route
     GoRoute(
       path: '/game',
       name: 'game',
       builder: (context, state) {
         return GameWidget(
           game: DinoRunGame(
-            onGameOver: () {
-              Future.microtask(() {
-                // ignore: use_build_context_synchronously
-                context.go('/gameover'); // Menggunakan context dari builder
-              });
+            onGameOver: (score, coinCount) {
+              // Navigate to gameover screen with score and coin count
+              context.go('/gameover?score=$score&coins=$coinCount');
             },
           ),
         );
       },
-    ),
-    GoRoute(
-      path: '/gameover',
-      name: 'gameover',
-      builder: (context, state) => const GameOverScreen(),
     ),
   ],
 );
