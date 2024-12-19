@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,6 +29,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Navigasi setelah 3 detik
     Future.delayed(const Duration(seconds: 3), () {
+      // ignore: use_build_context_synchronously
       context.go('/');
     });
   }
@@ -46,13 +45,22 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFFFF176), // Warna latar belakang kuning
       body: Center(
-        child: FadeTransition(
-            opacity: _animation,
-            child: Image.asset(
-              'assets/images/dinoCoin.png',
-              width: 200,
-              height: 200,
-            )),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FadeTransition(
+              opacity: _animation,
+              child: Image.asset(
+                'assets/images/dinoCoin.png',
+                width: 200,
+                height: 200,
+              ),
+            ),
+            const SizedBox(
+                height: 20), // Spasi antara logo dan indikator loading
+            const CircularProgressIndicator(), // Indikator loading
+          ],
+        ),
       ),
     );
   }

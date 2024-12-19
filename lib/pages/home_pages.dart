@@ -100,7 +100,8 @@ class _HomeState extends State<Home> {
                                       as Map<String, dynamic>;
                                   String name = userData['name'] ?? 'User';
                                   return Text(
-                                    'Hello, $name',
+                                    // ignore: unnecessary_string_interpolations
+                                    '$name',
                                     style: const TextStyle(
                                       color: Color.fromARGB(255, 255, 255, 255),
                                       fontSize: 18,
@@ -273,7 +274,7 @@ class _HomeState extends State<Home> {
             const Color(0xFFFF0000),
           ),
           padding: WidgetStateProperty.all(
-            const EdgeInsets.symmetric(vertical: 25, horizontal: 70),
+            const EdgeInsets.symmetric(vertical: 18, horizontal: 80),
           ),
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
